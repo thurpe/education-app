@@ -1,11 +1,13 @@
 class StudentsController < ApplicationController
+    skip_before_action :require_user ,only: [:new, :create]
+    before_action :set_student, only: [:show, :edit, :update]
+    before_action :require_same_student, only: [:edit, :update]
 
     def index
     @students = Student.all
     end
 
     def show
-        @students = Student.find(params[:id])
     end
 
     def new
@@ -15,7 +17,7 @@ class StudentsController < ApplicationController
     def create
         @student = Student.new(student_params)
         if @student.save
-            flash[:success] = "You have successfully signed up"
+            flash[:notice] = "You have successfully signed up"
             redirect_to root_path
         else
             render 'new'
@@ -23,14 +25,12 @@ class StudentsController < ApplicationController
     end
 
     def edit
-
     end
 
     def update
-        @student = Student.find(params[:id])
-        if @student.update
-            flash[:success] = "You have successfully updated your profile"
-            redirect_to root_path
+        if @student.update(student_params)
+            flash[:notice] = "You have successfully updated your profile"
+            redirect_to @student
         else
             render 'edit'
         end
@@ -40,6 +40,17 @@ class StudentsController < ApplicationController
     private
 
     def student_params
-        params.require(:student).permit(:name, :email)
+        params.require(:student).permit(:name, :email, :password, :password_confirmation)
+    end
+
+    def set_student
+        @student = Student.find(params[:id])
+    end
+
+    def require_same_student
+        if current_user != @student
+            flash[:notice] = "You have been restricted from performing that action"
+            redirect_to student_path(current_user)
+        end
     end
 end
